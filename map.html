@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maharashtra Temperature Heatmap</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        // Initialize the map centered on Maharashtra
+        const map = L.map('map').setView([19.7515, 75.7139], 6); // Maharashtra coordinates
+
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Example temperature data points for Maharashtra (lat, lon, temperature as intensity)
+        const temperatureData = [
+            [18.5204, 73.8567, 35],  // Pune
+            [19.0760, 72.8777, 33],  // Mumbai
+            [20.5937, 78.9629, 40],  // Nagpur
+            [19.2183, 73.0877, 31],  // Thane
+            [18.6784, 73.8143, 36],  // Pimpri-Chinchwad
+            [17.6599, 75.9064, 38],  // Solapur
+            [20.3898, 77.4056, 39],  // Akola
+            [21.1458, 79.0882, 41],  // Nagpur outskirts
+            [16.7050, 74.2433, 37]   // Kolhapur
+        ];
+
+        // Convert temperature data to heatmap intensity
+        const heatData = temperatureData.map(([lat, lon, temp]) => [lat, lon, temp / 50]); // Normalize intensity
+
+        // Add heatmap layer to the map
+        const heatLayer = L.heatLayer(heatData, {
+            radius: 20,       // Base radius of heatmap points
+            blur: 15,         // Blur radius
+            maxZoom: 18,      // Maximum zoom for intensity
+            minOpacity: 0.5,  // Minimum opacity of the heatmap layer
+            gradient: {       // Color gradient for intensity levels
+                0.2: 'blue',   // Low temperatures
+                0.4: 'lime',   // Moderate temperatures
+                0.6: 'yellow', // Warm temperatures
+                0.8: 'orange', // Hot temperatures
+                1.0: 'red'     // Very hot temperatures
+            }
+        }).addTo(map);
+
+        // Dynamically adjust radius based on zoom level
+        map.on('zoomend', function () {
+            const zoomLevel = map.getZoom();
+            const newRadius = zoomLevel * 2 + 5; // Adjust radius dynamically based on zoom
+            heatLayer.setOptions({ radius: newRadius });
+        });
+
+        // Add a legend
+        const legend = L.control({ position: 'bottomright' });
+        legend.onAdd = function () {
+            const div = L.DomUtil.create('div', 'info legend');
+            const grades = [20, 30, 40, 50];
+            const colors = ['blue', 'lime', 'yellow', 'orange', 'red'];
+            div.innerHTML = '<h4>Temperature (°C)</h4>';
+            grades.forEach((grade, i) => {
+                div.innerHTML += `<i style="background: ${colors[i]}"></i> ${grade}${grades[i + 1] ? `–${grades[i + 1]}<br>` : '+'}`;
+            });
+            return div;
+        };
+        legend.addTo(map);
+    </script>
+</body>
+</html>
